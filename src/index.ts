@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, Router } from "express";
 import { createConnection } from "typeorm";
 import dbConfig from "../config/database";
 
@@ -6,34 +6,28 @@ import dbConfig from "../config/database";
 const app = express()
 const port = 3000
 
-const members = [
-
-  {
-    id:1,
-    name: 'John Doe',
-    email: 'johndoe@gmail.com',
-    status: 'active'
-  },
-  {
-    id:2,
-    name: 'Petar Peric',
-    email: 'petar@gmail.com',
-    status: 'active'
-  },
-  {
-    id:3,
-    name: 'Jovan Jovanovic',
-    email: 'jovan@gmail.com',
-    status: 'inactive'
-  },
-
-]
-app.get('/',(req,res ) => {
+app.get('/',(req:Request,res:Response, next) => {
     res.send("Working working");
+    next();
+
+})
+app.get('/',(req:Request,res:Response) => {
+  console.log("Nesto");
+
 })
 
-app.get('/members', (req,res) =>res.json(members))
+//Ovde ide logika
+app.use('/createSession'),(req:Request, res:Response) => {
 
+}
+
+app.use('/finishStep'),(req:Request, res:Response) => {
+
+}
+
+app.use('/getSessions'),(req:Request, res:Response) => {
+
+}
 
 //Trying to connect to database
 createConnection(dbConfig)
