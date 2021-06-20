@@ -17,15 +17,15 @@ app.get('/',(req:Request,res:Response) => {
 })
 
 //Ovde ide logika
-app.use('/createSession'),(req:Request, res:Response) => {
+app.get('/createSession'),(req:Request, res:Response) => {
 
 }
 
-app.use('/finishStep'),(req:Request, res:Response) => {
+app.get('/finishStep'),(req:Request, res:Response) => {
 
 }
 
-app.use('/getSessions'),(req:Request, res:Response) => {
+app.get('/getSessions'),(req:Request, res:Response) => {
 
 }
 
