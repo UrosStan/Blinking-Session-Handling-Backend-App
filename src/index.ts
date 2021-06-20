@@ -17,17 +17,20 @@ app.get('/',(req:Request,res:Response) => {
 })
 
 //Ovde ide logika
-app.get('/createSession'),(req:Request, res:Response) => {
+app.get('/createSession',(req:Request, res:Response) => {
+  res.send("Nesto nesto");
+ 
+})
 
-}
-
-app.get('/finishStep'),(req:Request, res:Response) => {
-
-}
-
-app.get('/getSessions'),(req:Request, res:Response) => {
-
-}
+app.get('/finishStep',(req:Request, res:Response) => {
+  res.send("Nesto nesto");
+ 
+})
+ 
+app.get('/getSessions',(req:Request, res:Response) => {
+    res.send("Ovde idu sesije");
+   
+})
 
 //Trying to connect to database
 createConnection(dbConfig)
