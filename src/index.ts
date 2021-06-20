@@ -2,6 +2,7 @@ import express from "express";
 import { createConnection } from "typeorm";
 import dbConfig from "../config/database";
 
+//Starting the server
 const app = express()
 const port = 3000
 
@@ -34,6 +35,7 @@ app.get('/',(req,res ) => {
 app.get('/members', (req,res) =>res.json(members))
 
 
+//Trying to connect to database
 createConnection(dbConfig)
   .then((_connection) => {
     app.listen(port, () => {

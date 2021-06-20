@@ -1,5 +1,7 @@
 import { ConnectionOptions } from "typeorm";
 
+//Env file if we decide to use it
+//Don't forget to put it in git ignore!
 const config: ConnectionOptions = {
   type: "postgres",
   host: process.env.POSTGRES_HOST || "localhost",
