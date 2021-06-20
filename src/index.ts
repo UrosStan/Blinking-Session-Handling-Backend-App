@@ -29,7 +29,7 @@ const members = [
 
 ]
 app.get('/',(req,res ) => {
-    res.send("Working");
+    res.send("Working working");
 })
 
 app.get('/members', (req,res) =>res.json(members))

@@ -1,4 +1,8 @@
 import { ConnectionOptions } from "typeorm";
+import { Session } from "../src/models/Session";
+import { Step } from "../src/models/Step";
+import { StepAttempt } from "../src/models/StepAttempt";
+import { StepData } from "../src/models/StepData";
 
 //Env file if we decide to use it
 //Don't forget to put it in git ignore!
@@ -9,7 +13,7 @@ const config: ConnectionOptions = {
   username: process.env.POSTGRES_USER || "postgres",
   password: process.env.POSTGRES_PASSWORD || "pass",
   database: process.env.POSTGRES_DB || "postgres",
-  entities: [],
+  entities: [Session,Step,StepAttempt,StepData],
   synchronize: true,
 };
 
