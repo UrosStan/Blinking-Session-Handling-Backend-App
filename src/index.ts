@@ -2,18 +2,22 @@ import express, { Request, Response, Router } from "express";
 import { createConnection, getConnection, getRepository } from "typeorm";
 import dbConfig from "../config/database";
 import { Session, SessionStatus } from "./models/Session";
-  
+import { Step, StepType } from "./models/Step";
+//import crypto from "express";
+const crypto = require("crypto");
+import { json } from "body-parser";
+
 
 
 const app = express();
-// app.use(express.json());
-
+app.use(express.json());
 const port = 3000 ;
 //Connecting to the database
 createConnection(dbConfig).then((_connection) => {
   
       //Namestanje konekcije za sesiju
       const SessionRepository = _connection.getRepository(Session);
+      const StepRepository = _connection.getRepository(Step);
 
 
 
@@ -27,22 +31,58 @@ app.get('/',(req:Request,res:Response) => {
 
 })
 
-app.post('/createSession',async (req:Request, res:Response) => {
-    
+app.post('/createSession',async (req:Request, res:Response,next) => {
+
+
+  try{
     const newSession = await SessionRepository.create();
     //Setting default values
-    newSession.isFinished=false;
     newSession.isSuccessful=false;
+    newSession.isFinished=false;
     newSession.status=SessionStatus.Created;
     //Generetaing guid
-    const crypto = require("crypto");
     newSession.sessionId= crypto.randomBytes(16).toString("hex");
+    //Saving
+    await SessionRepository.save(newSession);
+    // res.send(newSession);  
+
+    //Step logic
+    const newStep = StepRepository.create();
+    const Step: string[]=["Math","Logic","Math", "Logic"];
    
 
- 
+      try{
+        const newStep = StepRepository.create();
+        //Setting default values
+        newStep.session=newSession.id;
+        newStep.currentAttempt= 0;
+        newStep.maxAttempts=2        
+        newStep.isFinished=false;
+        newStep.isSuccessful=false;
+        // if(Step[0]=="Math") newStep.type=StepType.Math;
+        // else newStep.type=StepType.Logic;
 
-    const results = await SessionRepository.save(newSession);
-    res.send(newSession);  
+        
+       
+        //Saving
+        await StepRepository.save(newStep);
+        res.send(newStep);  
+    
+       
+      }catch(err){
+        console.log(err);
+        return res.status(500).json(err);
+      }
+  
+  
+    
+   
+  }catch(err){
+    console.log(err);
+    return res.status(500).json(err);
+  }
+  //Ako sve prodje dobro onda ubacujemo stepove
+ // next();
 
   //Znaci dobijamo niz koraka kao argument sesije, tipa niz []= {Math (blabla), Logic(blabla), Math(..), (Math..)}
   //A same paylode idu kroz finish step
@@ -61,10 +101,27 @@ app.post('/createSession',async (req:Request, res:Response) => {
    
    //Cek znaci mi smo trebali da sve stepove upisemo u tabelu step odmah iz niza u funkciji create
 
+   
 })
+// app.get('/createSession',async(req:Request, res:Response) => {
+  
+//   console.log("Usli smo u drugu funkciju");
+//   res.send("Sve ok");
 
-app.get('/finishStep',(req:Request, res:Response) => {
-  res.send("Nesto nesto");
+   
+  
+
+
+
+// });
+
+app.post('/finishStep',(req:Request, res:Response) => {
+ 
+  const Step=req.body;
+  //console.log(Step);;
+  console.log(Step);
+  res.json(Step);
+  
 
  //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
  //Ovo math i logic mozda mogu u get da postavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post

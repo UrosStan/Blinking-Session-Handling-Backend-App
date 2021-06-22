@@ -3,8 +3,8 @@ import {Session} from "./Session";
 import { StepAttempt } from "./StepAttempt";
 
 export enum StepType {
-    Math = "math",
-    Logic = "logic"
+    Math ,
+    Logic
 }
 //Moram da vidim sta cu raditi sa ovim, da li ostaviti data kao string? Trebalo bi da radi posao
 // const data={
@@ -14,7 +14,7 @@ export enum StepType {
 
 @Entity()
 export class Step {
-
+   
     @PrimaryGeneratedColumn()
     id!: number;
 
@@ -40,7 +40,7 @@ export class Step {
     currentAttempt!: number;
 
     @ManyToOne(() => Session, session => session.steps)
-    session!: Session;
+    session!: number;
 
     @OneToMany(() => StepAttempt, stepAttempt => stepAttempt.step)
     stepAttempts!: StepAttempt[];
