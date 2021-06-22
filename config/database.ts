@@ -14,7 +14,7 @@ const config: ConnectionOptions = {
   password: process.env.POSTGRES_PASSWORD || "pass",
   database: process.env.POSTGRES_DB || "postgres",
   entities: [Session,Step,StepAttempt,StepData],
-  synchronize: false,
+  synchronize: true,
 };
 
 export default config; 

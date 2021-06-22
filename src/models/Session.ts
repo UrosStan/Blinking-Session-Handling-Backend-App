@@ -29,8 +29,8 @@ export enum SessionStatus {
     @CreateDateColumn()
     createdAt!: Date;
 
-    @Column()
-    finishedAt!:Date;
+    @Column({ nullable: true })
+    finishedAt!: Date;
   
     @Column({
         type: "enum",

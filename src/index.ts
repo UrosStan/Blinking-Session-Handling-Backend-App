@@ -44,9 +44,9 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
     newSession.sessionId= crypto.randomBytes(16).toString("hex");
     //Saving
     await SessionRepository.save(newSession);
-    res.send(newSession);  
+    // res.send(newSession);  
 
-    //Step logic
+    //Step logic 
     
       try{
         for (var x of req.body.steps){
@@ -59,11 +59,11 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
         newStep.maxAttempts=2        
         newStep.isFinished=false;
         newStep.isSuccessful=false;
-        //  if(x.type==Math) {
-        //    newStep.type=StepType.Math;
-        //  } else newStep.type=StepType.Logic;
+         if(x.type==Math) {
+           newStep.type=StepType.Math;
+         } else newStep.type=StepType.Logic;
 
-        
+        newStep.data="-1";
        
         //Saving
         await StepRepository.save(newStep);
@@ -102,8 +102,10 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
    
    //Cek znaci mi smo trebali da sve stepove upisemo u tabelu step odmah iz niza u funkciji create
 
-   
+   res.send("Uspesno snimljeno");  
 })
+
+
 // app.get('/createSession',async(req:Request, res:Response) => {
   
 //   console.log("Usli smo u drugu funkciju");
