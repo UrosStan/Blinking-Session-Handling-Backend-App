@@ -32,7 +32,26 @@ app.get('/',(req:Request,res:Response) => {
 })
 
 app.post('/createSession',async (req:Request, res:Response,next) => {
+//Model for calling create session in Postman
 
+// {"steps":[
+//   {
+//   "type":"Math"
+//   },
+//   {
+//   "type":"Logic"
+//   },
+//   {
+//   "type":"Logic"
+//   },
+//   {
+//   "type":"Math"
+//   },
+//   {
+//   "type":"Math"
+//   }
+// ]
+// }
 
   try{
     const newSession = await SessionRepository.create();
@@ -82,26 +101,8 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
     console.log(err);
     return res.status(500).json(err);
   }
-  //Ako sve prodje dobro onda ubacujemo stepove
- // next();
-
-  //Znaci dobijamo niz koraka kao argument sesije, tipa niz []= {Math (blabla), Logic(blabla), Math(..), (Math..)}
-  //A same paylode idu kroz finish step
-  //Treba da vidim kako cu napraviti ovaj niz, vrv neki associative array?
-  //Edit, cek znaci ovde ne idu payload nego samo tipovi koraka
   
-  //Ovde cemo generisati guid, video sam da ima neka fora sa express-session ovde gde bukvalno imas funkciju za ovo, da ne pravim sam
-  //Automatski stavljamo session status u Created 
-  //Finished at na null
-  //Is succesful false
-  //Is finished false
-  // Max attempt na 2, video sam foru sa express-sessionn gde se pravi promenljiva req.session.AttemptNumver tipa i vezan je za sesiju ovu, tako?
-  //Neka funkcija koja ce proveriti da li u nizu imamo i vrednost Math i vrednost Logic jer mora imati obe vrednosti
-
-  //Ahaaaa ovde mogu zavrsiti createSession i tjt
-   
-   //Cek znaci mi smo trebali da sve stepove upisemo u tabelu step odmah iz niza u funkciji create
-
+    // next();
    res.send("Uspesno snimljeno");  
 })
 
@@ -110,32 +111,21 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
   
 //   console.log("Usli smo u drugu funkciju");
 //   res.send("Sve ok");
-
-   
-  
-
-
-
 // });
 
-app.post('/finishStep',(req:Request, res:Response) => {
+app.post('/finishStep',async(req:Request, res:Response) => {
  
-  const Step = req.body;
+  const {sessionId,stepId,payload} = req.body;
   //console.log(Step);;
-  
- 
-  
-  // console.log(req.body.steps);
-  // console.log(typeof(req.body.steps));
-  //console.log(Step);
-  res.json(req.body.steps);
+
+      const Session = await SessionRepository.findOne(sessionId);
+      res.json(Session);
   
 
  //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
  //Ovo math i logic mozda mogu u get da postavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
 
  //Znaci metoda finishstep prima tri parametra {session id, id koraka, payload } 
- //Cek znaci mi smo trebali da sve stepove upisemo u tabelu step odmah iz niza u funkciji create
  //Znaci ovde uzmemo sve stepove tjst. vratimo step sa id-jem koji smo dobili prilikom pozivanja finishstep, posto ona prima id koraka
  //Proverimo da li je finished i na kom je attemptu 
  //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
@@ -158,7 +148,7 @@ app.post('/finishStep',(req:Request, res:Response) => {
  //Napisati regex za logic
 
 
-
+res.status(200).send("Sve ok");
 })
  
   app.get('/getSessions/',async (req:Request, res:Response) => {
