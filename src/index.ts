@@ -124,17 +124,20 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 //   "payload": 4
 // }
   const {sessionId,stepId,payload} = req.body;
-    //console.log(sessionId);
+      
       const Session = await SessionRepository.findOne(sessionId);
       const Step = await StepRepository.findOne(stepId);
-      //res.send(Session);
+      //res.send(Step);
       
-      if(Session==null || Step==null) return res.send("Greska");
+      if(Session == null || Step == null) return res.send("Greska");
 
-    
+      if(Step.type == "Math")return res.send("Mata je");
+      else res.send("Logika je");
 
+      if(Step.isFinished==true)return res.send("Vec je zavrsen step");
+      
   //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
-  //Ovo math i logic mozda mogu u get da postavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
+  //Ovo math i logic mozda mogu u get da po stavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
 
   //Znaci metoda finishstep prima tri parametra {session id, id koraka, payload } 
   //Znaci ovde uzmemo sve stepove tjst. vratimo step sa id-jem koji smo dobili prilikom pozivanja finishstep, posto ona prima id koraka
