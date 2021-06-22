@@ -1,10 +1,20 @@
 import express, { Request, Response, Router } from "express";
-import { createConnection } from "typeorm";
+import { createConnection, getConnection, getRepository } from "typeorm";
 import dbConfig from "../config/database";
+import { Session, SessionStatus } from "./models/Session";
 
-//Starting the server
-const app = express()
-const port = 3000
+
+const app = express();
+// app.use(express.json());
+
+const port = 3000;
+//Connecting to the database
+createConnection(dbConfig).then((_connection) => {
+  
+      //Namestanje konekcije a sesiju
+      const SessionRepository = _connection.getRepository(Session);
+
+
 
 app.get('/',(req:Request,res:Response, next) => {
     res.send("Working working");
@@ -18,6 +28,7 @@ app.get('/',(req:Request,res:Response) => {
 
 app.get('/createSession',(req:Request, res:Response) => {
   res.send("Nesto nesto");
+
   //Znaci dobijamo niz koraka kao argument sesije, tipa niz []= {Math (blabla), Logic(blabla), Math(..), (Math..)}
   //A same paylode idu kroz finish step
   //Treba da vidim kako cu napraviti ovaj niz, vrv neki associative array?
@@ -70,21 +81,19 @@ app.get('/finishStep',(req:Request, res:Response) => {
 
 })
  
-app.get('/getSessions',(req:Request, res:Response) => {
-    res.send("Ovde idu sesije");
-   
-    //Basic querys
-})
-
-//Connecting to the database
-createConnection(dbConfig)
-  .then((_connection) => {
-    app.listen(port, () => {
-      console.log("Server is running on port", port);
+  app.get('/getSessions',async (req:Request, res:Response) => {
+      //res.send("Ovde idu sesije");
+      //Return all sessions
+     
+      //Basic querys
+      const sessions = await SessionRepository.find();
+      res.json(sessions);
+    
     });
-  })
-  .catch((err) => {
-    console.log("Unable to connect to db", err);
-    process.exit(1);
-  });
+  
 
+  
+  //Settings for server
+  app.listen(port);
+
+});
