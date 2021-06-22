@@ -14,6 +14,6 @@ export class StepAttempt {
     data!: string;
 
     @ManyToOne(() => Step, step => step.stepAttempts)
-    step!: Step;
+    step!: number;
 
 }

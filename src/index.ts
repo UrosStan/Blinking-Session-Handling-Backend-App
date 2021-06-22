@@ -6,6 +6,8 @@ import { Step, StepType } from "./models/Step";
 //import crypto from "express";
 const crypto = require("crypto");
 import { json } from "body-parser";
+import { StepAttempt } from "./models/StepAttempt";
+import { StepData } from "./models/StepData";
 
 
 
@@ -18,6 +20,9 @@ createConnection(dbConfig).then((_connection) => {
       //Namestanje konekcije za sesiju
       const SessionRepository = _connection.getRepository(Session);
       const StepRepository = _connection.getRepository(Step);
+      const StepAttemptRepository = _connection.getRepository(StepAttempt);
+      const StepDataRepository = _connection.getRepository(StepData);
+
 
 
 
@@ -110,12 +115,6 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
 });
 
 
-// app.get('/createSession',async(req:Request, res:Response) => {
-  
-//   console.log("Usli smo u drugu funkciju");
-//   res.send("Sve ok");
-// });
-
 app.post('/finishStep',async(req:Request, res:Response) => {
  //How to test in postman
 //  {
@@ -129,19 +128,71 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       const Step = await StepRepository.findOne(stepId);
       //res.send(Step);
       
+      //Provera da li smo dobre id-jeve dali
       if(Session == null || Step == null) return res.send("Greska");
 
-      if(Step.type == "Math")return res.send("Mata je");
-      else res.send("Logika je");
 
+      if(Session.status=="Completed")return res.send("Vec smo zavrsili sesiju");
+      //provera da li smo zavrsili step
       if(Step.isFinished==true)return res.send("Vec je zavrsen step");
-      
-  //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
-  //Ovo math i logic mozda mogu u get da po stavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
+  
+      if(Step.maxAttempts-Step.currentAttempt<=0){
+        Step.isFinished=true;
+        return res.send("Iskoriscen je maksimalan broj pokusaja");
+      }
 
-  //Znaci metoda finishstep prima tri parametra {session id, id koraka, payload } 
-  //Znaci ovde uzmemo sve stepove tjst. vratimo step sa id-jem koji smo dobili prilikom pozivanja finishstep, posto ona prima id koraka
-  //Proverimo da li je finished i na kom je attemptu 
+      //Svaku proveru i upisivanje radimo i sa StepAttemptom, za pocetak sesiju stavljamo na InProgress ako nije
+      if(Session.status=="Created")Session.status=SessionStatus.InProgress;
+
+      const newStepAttempt= await StepAttemptRepository.create();
+
+      //Ako ne postoji stepData
+      let newStepData;
+      if(Session.stepData==null){
+      newStepData= await StepDataRepository.create();
+      }else{
+        //Ako postoji stepData
+        newStepData = await StepDataRepository.findOne(Session.stepData);
+      }
+
+        
+
+      newStepAttempt.step=Step.id;
+      newStepAttempt.data=payload;
+
+
+      //Ovde krecemo sa logikom
+      if(Step.type == "Math"){
+        //Math logika
+        if(payload==4){
+        //Uspeh
+
+        //Zatvaramo step attempt
+        newStepAttempt.isSuccessful=true;
+        await StepAttemptRepository.save(newStepAttempt);
+
+        //Zatvaramo step
+        Step.isSuccessful = true;
+        Step.isFinished = true;
+        Step.currentAttempt++;
+        await StepRepository.save(Step);
+
+        //StepData stavimo data unutra
+        newStepData!.mathData=payload;
+        //Session pozivamo da vidimo jel on kompletno gotov, idemo search za sve stepove koji su finished 
+        
+        }else{
+          //Neuspeh math payload
+          //I ovde se puni step sa data
+          Step.data=payload;
+          Step.currentAttempt++;
+        }
+      }
+      else {
+        //Logic logika
+
+      }
+
   //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
   //Ako sve prodje
   //Utvrdimo tip stepa(mozemo prikazati poruku korisnku) i ubacimo payload u odgovarajucu funkciju, Math ili Logic, prosledimo i id step-a 
@@ -151,6 +202,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 
       //Imamo funkciju koja Proverava da li je ostalo jos koraka u session-u, 
       //ako nije ostalo jos koraka onda stavljamo session kao uspesan ako su svi stepovi gotovi i uspesni
+
+      //Imamo funkciju koja Proverava da li je ostalo jos koraka u stepu-u, 
+      //ako nije ostalo jos koraka onda stavljamo step kao neuspesan ako su svi stepovi gotovi i uspesni
 
       //Takodje moramo imati funkciju koja ce se pozivati posle svakog gotovog step-a da azurira stepData
       //Poziva se i posle uspesnog i neuspesnog gotovog step-a
