@@ -3,8 +3,8 @@ import {Session} from "./Session";
 import { StepAttempt } from "./StepAttempt";
 
 export enum StepType {
-    Math ,
-    Logic
+    Math = "Mata",
+    Logic = "Logika"
 }
 //Moram da vidim sta cu raditi sa ovim, da li ostaviti data kao string? Trebalo bi da radi posao
 // const data={
@@ -22,8 +22,8 @@ export class Step {
         type: "enum",
         enum: StepType
     })
-    type!: StepType
-
+    type!: string;
+        
     @Column()
     isSuccessful!: boolean;
 

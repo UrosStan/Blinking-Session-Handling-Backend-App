@@ -44,14 +44,14 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
     newSession.sessionId= crypto.randomBytes(16).toString("hex");
     //Saving
     await SessionRepository.save(newSession);
-    // res.send(newSession);  
+    res.send(newSession);  
 
     //Step logic
-    const newStep = StepRepository.create();
-    const Step: string[]=["Math","Logic","Math", "Logic"];
-   
-
+    
       try{
+        for (var x of req.body.steps){
+
+        
         const newStep = StepRepository.create();
         //Setting default values
         newStep.session=newSession.id;
@@ -59,23 +59,24 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
         newStep.maxAttempts=2        
         newStep.isFinished=false;
         newStep.isSuccessful=false;
-        // if(Step[0]=="Math") newStep.type=StepType.Math;
-        // else newStep.type=StepType.Logic;
+        //  if(x.type==Math) {
+        //    newStep.type=StepType.Math;
+        //  } else newStep.type=StepType.Logic;
 
         
        
         //Saving
         await StepRepository.save(newStep);
-        res.send(newStep);  
-    
-       
+        //res.send(newStep);  
+      }
+        
       }catch(err){
         console.log(err);
         return res.status(500).json(err);
       }
   
   
-    
+      
    
   }catch(err){
     console.log(err);
@@ -117,10 +118,15 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
 
 app.post('/finishStep',(req:Request, res:Response) => {
  
-  const Step=req.body;
+  const Step = req.body;
   //console.log(Step);;
-  console.log(Step);
-  res.json(Step);
+  
+ 
+  
+  // console.log(req.body.steps);
+  // console.log(typeof(req.body.steps));
+  //console.log(Step);
+  res.json(req.body.steps);
   
 
  //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
