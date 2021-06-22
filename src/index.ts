@@ -2,16 +2,17 @@ import express, { Request, Response, Router } from "express";
 import { createConnection, getConnection, getRepository } from "typeorm";
 import dbConfig from "../config/database";
 import { Session, SessionStatus } from "./models/Session";
+  
 
 
 const app = express();
 // app.use(express.json());
 
-const port = 3000;
+const port = 3000 ;
 //Connecting to the database
 createConnection(dbConfig).then((_connection) => {
   
-      //Namestanje konekcije a sesiju
+      //Namestanje konekcije za sesiju
       const SessionRepository = _connection.getRepository(Session);
 
 
@@ -26,8 +27,22 @@ app.get('/',(req:Request,res:Response) => {
 
 })
 
-app.get('/createSession',(req:Request, res:Response) => {
-  res.send("Nesto nesto");
+app.post('/createSession',async (req:Request, res:Response) => {
+    
+    const newSession = await SessionRepository.create();
+    //Setting default values
+    newSession.isFinished=false;
+    newSession.isSuccessful=false;
+    newSession.status=SessionStatus.Created;
+    //Generetaing guid
+    const crypto = require("crypto");
+    newSession.sessionId= crypto.randomBytes(16).toString("hex");
+   
+
+ 
+
+    const results = await SessionRepository.save(newSession);
+    res.send(newSession);  
 
   //Znaci dobijamo niz koraka kao argument sesije, tipa niz []= {Math (blabla), Logic(blabla), Math(..), (Math..)}
   //A same paylode idu kroz finish step
@@ -81,13 +96,19 @@ app.get('/finishStep',(req:Request, res:Response) => {
 
 })
  
-  app.get('/getSessions',async (req:Request, res:Response) => {
+  app.get('/getSessions/',async (req:Request, res:Response) => {
       //res.send("Ovde idu sesije");
       //Return all sessions
      
       //Basic querys
+      //All sessions
       const sessions = await SessionRepository.find();
       res.json(sessions);
+
+      //Find one
+      // const oneSession = await SessionRepository.findOne(req.params.id);
+      // res.json(oneSession);
+
     
     });
   
@@ -96,4 +117,5 @@ app.get('/finishStep',(req:Request, res:Response) => {
   //Settings for server
   app.listen(port);
 
+  
 });

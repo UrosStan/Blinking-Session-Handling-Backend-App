@@ -30,7 +30,7 @@ export enum SessionStatus {
     createdAt!: Date;
 
     @Column()
-    finishedAt!: Date;
+    finishedAt!:Date;
   
     @Column({
         type: "enum",
