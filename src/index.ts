@@ -78,9 +78,12 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
         newStep.maxAttempts=2        
         newStep.isFinished=false;
         newStep.isSuccessful=false;
-         if(x.type==Math) {
+         if(x.type == "Math") {
            newStep.type=StepType.Math;
-         } else newStep.type=StepType.Logic;
+            
+         } 
+
+         else newStep.type=StepType.Logic;
 
         newStep.data="-1";
        
@@ -104,7 +107,7 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
   
     // next();
    res.send("Uspesno snimljeno");  
-})
+});
 
 
 // app.get('/createSession',async(req:Request, res:Response) => {
@@ -114,42 +117,47 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
 // });
 
 app.post('/finishStep',async(req:Request, res:Response) => {
- 
+ //How to test in postman
+//  {
+//   "sessionId": 42,
+//   "stepId": 24,
+//   "payload": 4
+// }
   const {sessionId,stepId,payload} = req.body;
-  //console.log(Step);;
-
+    //console.log(sessionId);
       const Session = await SessionRepository.findOne(sessionId);
-      res.json(Session);
+      const Step = await StepRepository.findOne(stepId);
+      //res.send(Session);
+      
+      if(Session==null || Step==null) return res.send("Greska");
+
+    
+
+  //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
+  //Ovo math i logic mozda mogu u get da postavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
+
+  //Znaci metoda finishstep prima tri parametra {session id, id koraka, payload } 
+  //Znaci ovde uzmemo sve stepove tjst. vratimo step sa id-jem koji smo dobili prilikom pozivanja finishstep, posto ona prima id koraka
+  //Proverimo da li je finished i na kom je attemptu 
+  //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
+  //Ako sve prodje
+  //Utvrdimo tip stepa(mozemo prikazati poruku korisnku) i ubacimo payload u odgovarajucu funkciju, Math ili Logic, prosledimo i id step-a 
   
+  //U funkciji proverimo da li je Step Finished prvo, ubelezimo stepAttempt u bazi sa rezultatom i vrednost koja je to generisala
+  //Ako je uspesan stepAtempt onda stavljamo i sam StepAttempt i Step kao uspesan o ipisujemo rezultate data
 
- //A bukvalno ovaj payload ce biti neki broj tipa Math(4) ili Logic(email@gmail.com)
- //Ovo math i logic mozda mogu u get da postavim? tipa ?Math=3&Logic="bla@gmail.com" Mozda ne jer ce se slati priv info? Bolje post
+      //Imamo funkciju koja Proverava da li je ostalo jos koraka u session-u, 
+      //ako nije ostalo jos koraka onda stavljamo session kao uspesan ako su svi stepovi gotovi i uspesni
 
- //Znaci metoda finishstep prima tri parametra {session id, id koraka, payload } 
- //Znaci ovde uzmemo sve stepove tjst. vratimo step sa id-jem koji smo dobili prilikom pozivanja finishstep, posto ona prima id koraka
- //Proverimo da li je finished i na kom je attemptu 
- //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
- //Ako sve prodje
- //Utvrdimo tip stepa(mozemo prikazati poruku korisnku) i ubacimo payload u odgovarajucu funkciju, Math ili Logic, prosledimo i id step-a 
- 
- //U funkciji proverimo da li je Step Finished prvo, ubelezimo stepAttempt u bazi sa rezultatom i vrednost koja je to generisala
- //Ako je uspesan stepAtempt onda stavljamo i sam StepAttempt i Step kao uspesan o ipisujemo rezultate data
+      //Takodje moramo imati funkciju koja ce se pozivati posle svakog gotovog step-a da azurira stepData
+      //Poziva se i posle uspesnog i neuspesnog gotovog step-a
 
-    //Imamo funkciju koja Proverava da li je ostalo jos koraka u session-u, 
-    //ako nije ostalo jos koraka onda stavljamo session kao uspesan ako su svi stepovi gotovi i uspesni
+  //Ako je neuspesan stepAttempt onda belezimo stepAttempt u bazi i damo korisniku opet da pokusa ukoliko moze
+  //Ukoliko ne moze, zatvaramo step, pisemo rezultat poslednje vrednosti iz neuspesnog step-a
+  // i pozivamo funkciju da vidimo da li zatvaramo session(da li je ostalo jos notFinished koraka)
 
-    //Takodje moramo imati funkciju koja ce se pozivati posle svakog gotovog step-a da azurira stepData
-    //Poziva se i posle uspesnog i neuspesnog gotovog step-a
-
- //Ako je neuspesan stepAttempt onda belezimo stepAttempt u bazi i damo korisniku opet da pokusa ukoliko moze
- //Ukoliko ne moze, zatvaramo step, pisemo rezultat poslednje vrednosti iz neuspesnog step-a
- // i pozivamo funkciju da vidimo da li zatvaramo session(da li je ostalo jos notFinished koraka)
-
- //Napisati regex za logic
-
-
-res.status(200).send("Sve ok");
-})
+  //Napisati regex za logic
+});
  
   app.get('/getSessions/',async (req:Request, res:Response) => {
       //res.send("Ovde idu sesije");

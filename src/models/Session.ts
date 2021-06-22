@@ -13,9 +13,9 @@ import {Step} from "./Step";
   
 //Inicilization of session statuses for enum 
 export enum SessionStatus {
-    Created = "Napravljena",
-    InProgress = "U toku",
-    Completed = "Zavrsena"
+    Created = "Created",
+    InProgress = "InProgress",
+    Completed = "Completed"
 }
 
   @Entity()

@@ -3,8 +3,8 @@ import {Session} from "./Session";
 import { StepAttempt } from "./StepAttempt";
 
 export enum StepType {
-    Math="Mata",
-    Logic="Logika"
+    Math="Math",
+    Logic="Logic"
 }
 //Moram da vidim sta cu raditi sa ovim, da li ostaviti data kao string? Trebalo bi da radi posao
 // const data={
