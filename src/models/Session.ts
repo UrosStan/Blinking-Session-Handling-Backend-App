@@ -46,7 +46,7 @@ export enum SessionStatus {
 
     @OneToOne(() => StepData)
     @JoinColumn()
-    stepData!: StepData;
+    stepData!: number;
 
     @OneToMany(() => Step, step => step.session)
     steps!: Step[];

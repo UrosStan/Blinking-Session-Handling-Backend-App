@@ -8,6 +8,7 @@ const crypto = require("crypto");
 import { json } from "body-parser";
 import { StepAttempt } from "./models/StepAttempt";
 import { StepData } from "./models/StepData";
+import { validateEmail } from "../config/functions";
 
 
 
@@ -122,6 +123,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 //   "stepId": 24,
 //   "payload": 4
 // }
+
+
+//Ne zaboravi sa session da namestis funkciju da vidis da li se zatvara
   const {sessionId,stepId,payload} = req.body;
       
       const Session = await SessionRepository.findOne(sessionId);
@@ -150,46 +154,94 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       let newStepData;
       if(Session.stepData==null){
       newStepData= await StepDataRepository.create();
+      Session.stepData=newStepData.id;
       }else{
         //Ako postoji stepData
         newStepData = await StepDataRepository.findOne(Session.stepData);
       }
 
-        
-
+      //Ovo ce se desiti u svakom koraku
       newStepAttempt.step=Step.id;
       newStepAttempt.data=payload;
-
+      Step.currentAttempt++;
+      Step.data=payload;
 
       //Ovde krecemo sa logikom
       if(Step.type == "Math"){
+        //Cim je math, odmah punimo StepData
+        newStepData!.mathData=payload;
+        await StepDataRepository.save(newStepData!);
+
         //Math logika
         if(payload==4){
-        //Uspeh
+          //Uspeh
+          //Zatvaramo step attempt
+          newStepAttempt.isSuccessful=true;
+          await StepAttemptRepository.save(newStepAttempt);
 
-        //Zatvaramo step attempt
-        newStepAttempt.isSuccessful=true;
-        await StepAttemptRepository.save(newStepAttempt);
+          //Zatvaramo step
+          Step.isSuccessful = true;
+          Step.isFinished = true;
+          await StepRepository.save(Step);
 
-        //Zatvaramo step
-        Step.isSuccessful = true;
-        Step.isFinished = true;
-        Step.currentAttempt++;
-        await StepRepository.save(Step);
-
-        //StepData stavimo data unutra
-        newStepData!.mathData=payload;
-        //Session pozivamo da vidimo jel on kompletno gotov, idemo search za sve stepove koji su finished 
+          //StepData stavimo data unutra
+          
+          //Session pozivamo da vidimo jel on kompletno gotov, idemo search za sve stepove koji su finished 
         
         }else{
           //Neuspeh math payload
-          //I ovde se puni step sa data
-          Step.data=payload;
-          Step.currentAttempt++;
+          //Zatvaramo StepAttempt
+          newStepAttempt.isSuccessful=false;
+          await StepAttemptRepository.save(newStepAttempt);
+          
+          //Zatvaramo Step
+          Step.isSuccessful=false;
+          //Provera da vidimo da li cemo ga zauvek zatvoriti
+          if(Step.maxAttempts-Step.currentAttempt<=0){
+            Step.isFinished = true;
+
+          }else Step.isFinished = false;
+          await StepRepository.save(Step);
+          
         }
       }
       else {
         //Logic logika
+        //Zatvaranje stepData
+        newStepData!.logicData=payload;
+        await StepDataRepository.save(newStepData!);
+        //Checking to see if the email is valid
+        const validEmail:boolean = validateEmail(payload);
+
+        if(validEmail){
+          //If Logic passes
+          //Zatvaramo stepAttempt
+          newStepAttempt.isSuccessful=true;
+          await StepAttemptRepository.save(newStepAttempt);
+
+          //Zatvaramo step
+          Step.isSuccessful = true;
+          Step.isFinished = true;
+          await StepRepository.save(Step);
+
+        }
+        else{
+          //If Logic fails
+          //Zatvaramo StepAttempt
+          newStepAttempt.isSuccessful=false;
+          await StepAttemptRepository.save(newStepAttempt);
+
+         //Zatvaramo Step
+         Step.isSuccessful=false;
+         //Provera da vidimo da li cemo ga zauvek zatvoriti
+         if(Step.maxAttempts-Step.currentAttempt<=0){
+           Step.isFinished = true;
+
+         }else Step.isFinished = false;
+         await StepRepository.save(Step);
+         
+
+        }
 
       }
 
@@ -202,9 +254,6 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 
       //Imamo funkciju koja Proverava da li je ostalo jos koraka u session-u, 
       //ako nije ostalo jos koraka onda stavljamo session kao uspesan ako su svi stepovi gotovi i uspesni
-
-      //Imamo funkciju koja Proverava da li je ostalo jos koraka u stepu-u, 
-      //ako nije ostalo jos koraka onda stavljamo step kao neuspesan ako su svi stepovi gotovi i uspesni
 
       //Takodje moramo imati funkciju koja ce se pozivati posle svakog gotovog step-a da azurira stepData
       //Poziva se i posle uspesnog i neuspesnog gotovog step-a
@@ -232,6 +281,12 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     
     });
   
+
+    //Uncomment for testing purposes
+    // app.get('/test/',async (req:Request, res:Response) => {
+    //   const result = validateEmail("uross12312@@gmail.com");
+    //   res.send(result);
+    // });
 
   
   //Settings for server
