@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from "express";
-import { createConnection, getConnection, getRepository } from "typeorm";
+import { createConnection, getConnection, getRepository, LessThan, MoreThan } from "typeorm";
 import dbConfig from "../config/database";
 import { Session, SessionStatus } from "./models/Session";
 import { Step, StepType } from "./models/Step";
@@ -133,7 +133,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       let newStepData;
       if(Session.stepData==null){
       newStepData= await StepDataRepository.create();
-      Session.stepData=newStepData.id;
+      //Session.stepData=newStepData.id;
       }else{
         //Ako postoji stepData
         newStepData = await StepDataRepository.findOne(Session.stepData);
@@ -151,7 +151,10 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     if(Step.type == "Math"){
         //Cim je math, odmah punimo StepData
         newStepData!.mathData=payload;
-        await StepDataRepository.save(newStepData!);
+        
+        //Fetching the id after saving it and putting it in session column
+        const newstepDataId =await StepDataRepository.save(newStepData!);
+        Session.stepData = newstepDataId.id;
 
         //Math logika
         if(payload==4){
@@ -164,6 +167,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
           Step.isSuccessful = true;
           Step.isFinished = true;
           await StepRepository.save(Step);
+          //Zatvaramo session
+          await SessionRepository.save(Session);
+
 
           }else{
           //Neuspeh math payload
@@ -195,7 +201,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       //Logic logika
       //Zatvaranje stepData
       newStepData!.logicData=payload;
-      await StepDataRepository.save(newStepData!);
+      //Fetching the id after saving it and putting it in session column
+      const newstepDataId =await StepDataRepository.save(newStepData!);
+      Session.stepData = newstepDataId.id;
       //Checking to see if the email is valid
       const validEmail:boolean = validateEmail(payload);
 
@@ -237,6 +245,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
         
 
       }
+      
    }
         //Setting up queries for Searching for steps of session
         const filterObject: any = {};
@@ -255,12 +264,23 @@ app.post('/finishStep',async(req:Request, res:Response) => {
           Session.status = SessionStatus.Completed;
           Session.isSuccessful=true;
           await SessionRepository.save(Session);
+          return res.send("Korak i cela sesija su uspesni");
+
         }
-        res.send("Gotovo, sve uspesno");
+        await SessionRepository.save(Session);
 
 });
  
   app.post('/getSessions',async (req:Request, res:Response) => {
+
+    //Json example
+    // {
+    //   "dateFrom": "2021-06-24",
+    //   "dateTill": "2022-07-15",
+    //    "status": "Completed",  
+    //   "isSuccessful": true,  
+    //   "isFInished":true
+    //  }
 
 
     const filter: any = {};
@@ -269,7 +289,10 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     if (req.body.status) filter.status = req.body.status;
     if (req.body.isSuccessful) filter.isSuccessful = req.body.isSuccessful;
     if (req.body.isFInished) filter.isFInished = req.body.isFInished;
-
+    //For dates use "2021-07-15" format
+    if (req.body.dateFrom) filter.createdAt = MoreThan(req.body.dateFrom);
+    if (req.body.dateTo) filter.createdAt = LessThan(req.body.dateTo);
+    
     const find: any = { where: filter }
     //Koriscenje skipa i take-a za paginaciju
     if (req.body.skip) find.skip = req.body.skip;
