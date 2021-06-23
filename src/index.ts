@@ -288,7 +288,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     
     if (req.body.status) filter.status = req.body.status;
     if (req.body.isSuccessful) filter.isSuccessful = req.body.isSuccessful;
-    if (req.body.isFInished) filter.isFInished = req.body.isFInished;
+    if (req.body.isFinished) filter.isFinished = req.body.isFinished;
     //For dates use "2021-07-15" format
     if (req.body.dateFrom) filter.createdAt = MoreThan(req.body.dateFrom);
     if (req.body.dateTo) filter.createdAt = LessThan(req.body.dateTo);
