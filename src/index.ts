@@ -260,24 +260,24 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 
 });
  
-  app.get('/getSessions',async (req:Request, res:Response) => {
-      //res.send("Ovde idu sesije");
-      //Return all sessions
-     
-      //Basic querys
-      //All sessions
+  app.post('/getSessions',async (req:Request, res:Response) => {
 
-      const filterObject: any = {};
-      filterObject.isFinished = true;
-      const findObject: any = { where: filterObject }
-      const stepsConditions = await SessionRepository.find(findObject);
-      const sessions = await SessionRepository.find();
-      res.json(sessions);
 
-      //Find one
-      // const oneSession = await SessionRepository.findOne(req.params.id);
-      // res.json(oneSession);
+    const filter: any = {};
+    //Check for params in body, and just add them to query with where 
+    
+    if (req.body.status) filter.status = req.body.status;
+    if (req.body.isSuccessful) filter.isSuccessful = req.body.isSuccessful;
+    if (req.body.isFInished) filter.isFInished = req.body.isFInished;
 
+    const find: any = { where: filter }
+    //Koriscenje skipa i take-a za paginaciju
+    if (req.body.skip) find.skip = req.body.skip;
+    if (req.body.take) find.take = req.body.take;
+
+    const sessions = await SessionRepository.find(find);
+
+    res.json(sessions);
     
     });
   
