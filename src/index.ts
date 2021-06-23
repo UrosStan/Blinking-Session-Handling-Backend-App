@@ -22,21 +22,8 @@ createConnection(dbConfig).then((_connection) => {
       const StepAttemptRepository = _connection.getRepository(StepAttempt);
       const StepDataRepository = _connection.getRepository(StepData);
 
-
-
-
-app.get('/',(req:Request,res:Response, next) => {
-    res.send("Working working");
-    next();
-
-})
-app.get('/',(req:Request,res:Response) => {
-  console.log("Nesto");
-
-})
-
 app.post('/createSession',async (req:Request, res:Response,next) => {
-//Model for calling create session in Postman
+//JSON Model for calling create session
 
 // {"steps":[
 //   {
@@ -58,14 +45,12 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
     newSession.sessionId= crypto.randomBytes(16).toString("hex");
     //Saving
     await SessionRepository.save(newSession);
-    // res.send(newSession);  
-
+    
     //Step logic 
     
       try{
         for (var x of req.body.steps){
 
-        
         const newStep = StepRepository.create();
         //Setting default values
         newStep.session=newSession.id;
@@ -92,13 +77,13 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
     console.log(err);
     return res.status(500).json(err);
   }
-   res.send("Uspesno snimljeno");  
+   res.status(201).send("Uspešno kreirana sesija sa koracima");  
 });
 
 
 app.post('/finishStep',async(req:Request, res:Response) => {
 
- //How to test in postman
+ //JSON format for running
 //  {
 //   "sessionId": 42,
 //   "stepId": 24,
@@ -112,16 +97,15 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       //res.send(Step);
       
       //Provera da li smo dobre id-jeve dali
-      if(Session == null || Step == null) return res.send("Greska");
+      if(Session == null || Step == null) return res.status(500).send("Ne postoje entiteti sa traženim id-jevima");
 
-
-      if(Session.status=="Completed")return res.send("Vec smo zavrsili sesiju");
-      //provera da li smo zavrsili step
-      if(Step.isFinished==true)return res.send("Vec je zavrsen step");
+      if(Session.status=="Completed")return res.send("Već je završena tražena sesija");
+      //provera da li smo zavrsili korak
+      if(Step.isFinished==true)return res.send("Već je završen korak");
   
       if(Step.maxAttempts-Step.currentAttempt<=0){
         Step.isFinished=true;
-        return res.send("Iskoriscen je maksimalan broj pokusaja");
+        return res.send("Iskorisćen je maksimalan broj pokušaja");
       }
 
       //Svaku proveru i upisivanje radimo i sa StepAttemptom, za pocetak sesiju stavljamo na InProgress ako nije
@@ -131,13 +115,18 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 
       //Ako ne postoji stepData
       let newStepData;
-      if(Session.stepData==null){
-      newStepData= await StepDataRepository.create();
-      //Session.stepData=newStepData.id;
-      }else{
-        //Ako postoji stepData
+      if(Session.stepData!=null){
+      //Ako postoji stepData
+        try{
         newStepData = await StepDataRepository.findOne(Session.stepData);
-        Session.stepData = newStepData!.id;
+        // Session.stepData = newStepData!.id;
+        }catch(err){
+          console.log(err);
+        return res.status(500).json(err);
+        }
+      }else{
+      newStepData= await StepDataRepository.create();
+      Session.stepData=newStepData.id;
       }
 
       //Ovo ce se desiti u svakom koraku
@@ -190,7 +179,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
               Session.isSuccessful=false;
               await SessionRepository.save(Session);
               await StepRepository.save(Step);
-              return res.send("Korak i cela sesija su neuspesni");
+              return res.status(201).send("Korak i cela sesija su neuspešni");
 
            }else Step.isFinished = false;
            await StepRepository.save(Step);
@@ -237,7 +226,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
               Session.isSuccessful=false;
               await SessionRepository.save(Session);
               await StepRepository.save(Step);
-              return res.send("Korak i cela sesija su neuspesni");
+              return res.status(201).send("Korak i cela sesija su neuspešni");
 
           }
            else Step.isFinished = false;
@@ -255,7 +244,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
         const findObject: any = { where: filterObject }
         const stepsConditions = await StepRepository.find(findObject);
         //Check if returned something
-        if(Object.keys(stepsConditions).length)res.send("Uspesno snimljeno, jos ima nedovrsenih koraka za ovu sesiju");
+        if(Object.keys(stepsConditions).length)res.status(201).send("Uspešno snimljen korak, još uvek ima nedovršenih koraka za ovu sesiju");
         else {
           //Nema onih koji nisu finished, znaci svi su finished, sesija je prosla i successfull 
           //Jer cemo staviti sessiju na completed i not succesful cim se jedan korak pogresi
@@ -264,7 +253,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
           Session.status = SessionStatus.Completed;
           Session.isSuccessful=true;
           await SessionRepository.save(Session);
-          return res.send("Korak i cela sesija su uspesni");
+          return res.status(201).send("Korak i cela sesija su uspešni");
 
         }
         await SessionRepository.save(Session);
@@ -293,7 +282,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     if (req.body.dateFrom) filter.createdAt = MoreThan(req.body.dateFrom);
     if (req.body.dateTo) filter.createdAt = LessThan(req.body.dateTo);
     
-    const find: any = { where: filter }
+    const find: any = { where: filter };
     //Koriscenje skipa i take-a za paginaciju
     if (req.body.skip) find.skip = req.body.skip;
     if (req.body.take) find.take = req.body.take;
