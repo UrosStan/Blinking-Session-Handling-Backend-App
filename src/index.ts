@@ -8,8 +8,7 @@ const crypto = require("crypto");
 import { json } from "body-parser";
 import { StepAttempt } from "./models/StepAttempt";
 import { StepData } from "./models/StepData";
-import { validateEmail } from "../config/functions";
-
+import {isSessionFinished, validateEmail } from "../config/functions";
 
 
 const app = express();
@@ -17,7 +16,6 @@ app.use(express.json());
 const port = 3000 ;
 //Connecting to the database
 createConnection(dbConfig).then((_connection) => {
-  
       //Namestanje konekcije za sesiju
       const SessionRepository = _connection.getRepository(Session);
       const StepRepository = _connection.getRepository(Step);
@@ -128,6 +126,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 //Ne zaboravi sa session da namestis funkciju da vidis da li se zatvara
   const {sessionId,stepId,payload} = req.body;
       
+      
+
+
       const Session = await SessionRepository.findOne(sessionId);
       const Step = await StepRepository.findOne(stepId);
       //res.send(Step);
@@ -166,6 +167,9 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       Step.currentAttempt++;
       Step.data=payload;
 
+    
+      
+
       //Ovde krecemo sa logikom
       if(Step.type == "Math"){
         //Cim je math, odmah punimo StepData
@@ -184,7 +188,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
           Step.isFinished = true;
           await StepRepository.save(Step);
 
-          //StepData stavimo data unutra
+         
           
           //Session pozivamo da vidimo jel on kompletno gotov, idemo search za sve stepove koji su finished 
         
@@ -236,7 +240,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
          //Provera da vidimo da li cemo ga zauvek zatvoriti
          if(Step.maxAttempts-Step.currentAttempt<=0){
            Step.isFinished = true;
-
+           
          }else Step.isFinished = false;
          await StepRepository.save(Step);
          
@@ -244,7 +248,22 @@ app.post('/finishStep',async(req:Request, res:Response) => {
         }
 
       }
-
+        //Setting up queries for Searching for steps of session
+        const filterObject: any = {};
+        filterObject.session = Session.id;
+        filterObject.isFinished = false;
+        
+        const findObject: any = { where: filterObject }
+        const stepsConditions = await StepRepository.find(findObject);
+        //Check if returned something
+        if(Object.keys(stepsConditions).length)res.send("Jos ima nedovrsenih koraka za ovu sesiju");
+        else {
+          //Nema onih koji nisu finished, znaci svi su finished, sesija je prosla i successfull 
+          //Session.finishedAt = new Date();
+          Session.isFinished = true;
+          Session.status = SessionStatus.Completed;
+          Session.isSuccessful=true;
+        }
   //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
   //Ako sve prodje
   //Utvrdimo tip stepa(mozemo prikazati poruku korisnku) i ubacimo payload u odgovarajucu funkciju, Math ili Logic, prosledimo i id step-a 
@@ -282,15 +301,26 @@ app.post('/finishStep',async(req:Request, res:Response) => {
     });
   
 
-    //Uncomment for testing purposes
+    // //Uncomment for testing purposes
     // app.get('/test/',async (req:Request, res:Response) => {
-    //   const result = validateEmail("uross12312@@gmail.com");
-    //   res.send(result);
+    //   // const result = validateEmail("uross12312@@gmail.com");
+    //   // res.send(result);
+    //   //filterObject.isSuccessful = false;
+    //   //Setting up queries for Searching for steps of session
+    //   const filterObject: any = {};
+    //   filterObject.session = 148;
+    //   filterObject.isFinished = true;
+    //   const findObject: any = { where: filterObject }
+    //   const stepsConditions = await StepRepository.find(findObject);
+    //   if(Object.keys(stepsConditions).length)res.json(stepsConditions);
+    //   else res.send("Prazan");
+      
+    
     // });
-
+ 
   
   //Settings for server
-  app.listen(port);
+  app.listen(port); 
 
   
 });
