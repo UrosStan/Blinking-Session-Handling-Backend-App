@@ -8,7 +8,7 @@ const crypto = require("crypto");
 import { json } from "body-parser";
 import { StepAttempt } from "./models/StepAttempt";
 import { StepData } from "./models/StepData";
-import {isSessionFinished, validateEmail } from "../config/functions";
+import {validateEmail } from "../config/functions";
 
 
 const app = express();
@@ -44,15 +44,6 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
 //   },
 //   {
 //   "type":"Logic"
-//   },
-//   {
-//   "type":"Logic"
-//   },
-//   {
-//   "type":"Math"
-//   },
-//   {
-//   "type":"Math"
 //   }
 // ]
 // }
@@ -83,14 +74,10 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
         newStep.isFinished=false;
         newStep.isSuccessful=false;
          if(x.type == "Math") {
-           newStep.type=StepType.Math;
-            
+           newStep.type=StepType.Math; 
          } 
-
          else newStep.type=StepType.Logic;
 
-        newStep.data="-1";
-       
         //Saving
         await StepRepository.save(newStep);
         //res.send(newStep);  
@@ -101,20 +88,16 @@ app.post('/createSession',async (req:Request, res:Response,next) => {
         return res.status(500).json(err);
       }
   
-  
-      
-   
   }catch(err){
     console.log(err);
     return res.status(500).json(err);
   }
-  
-    // next();
    res.send("Uspesno snimljeno");  
 });
 
 
 app.post('/finishStep',async(req:Request, res:Response) => {
+
  //How to test in postman
 //  {
 //   "sessionId": 42,
@@ -122,13 +105,8 @@ app.post('/finishStep',async(req:Request, res:Response) => {
 //   "payload": 4
 // }
 
-
-//Ne zaboravi sa session da namestis funkciju da vidis da li se zatvara
   const {sessionId,stepId,payload} = req.body;
       
-      
-
-
       const Session = await SessionRepository.findOne(sessionId);
       const Step = await StepRepository.findOne(stepId);
       //res.send(Step);
@@ -159,6 +137,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       }else{
         //Ako postoji stepData
         newStepData = await StepDataRepository.findOne(Session.stepData);
+        Session.stepData = newStepData!.id;
       }
 
       //Ovo ce se desiti u svakom koraku
@@ -168,10 +147,8 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       Step.data=payload;
 
     
-      
-
-      //Ovde krecemo sa logikom
-      if(Step.type == "Math"){
+    //Ovde krecemo sa logikom
+    if(Step.type == "Math"){
         //Cim je math, odmah punimo StepData
         newStepData!.mathData=payload;
         await StepDataRepository.save(newStepData!);
@@ -188,66 +165,79 @@ app.post('/finishStep',async(req:Request, res:Response) => {
           Step.isFinished = true;
           await StepRepository.save(Step);
 
-         
-          
-          //Session pozivamo da vidimo jel on kompletno gotov, idemo search za sve stepove koji su finished 
-        
-        }else{
+          }else{
           //Neuspeh math payload
           //Zatvaramo StepAttempt
           newStepAttempt.isSuccessful=false;
           await StepAttemptRepository.save(newStepAttempt);
           
-          //Zatvaramo Step
-          Step.isSuccessful=false;
+         
           //Provera da vidimo da li cemo ga zauvek zatvoriti
           if(Step.maxAttempts-Step.currentAttempt<=0){
-            Step.isFinished = true;
+              //Zatvaramo Step
+              Step.isFinished = true;
+              Step.isSuccessful=false;
+              //Ako se zatvori step koji nije succesful onda cela sessija nije succesful
+              Session.finishedAt = new Date();
+              Session.isFinished = true;
+              Session.status = SessionStatus.Completed;
+              Session.isSuccessful=false;
+              await SessionRepository.save(Session);
+              await StepRepository.save(Step);
+              return res.send("Korak i cela sesija su neuspesni");
 
-          }else Step.isFinished = false;
-          await StepRepository.save(Step);
+           }else Step.isFinished = false;
+           await StepRepository.save(Step);
           
         }
       }
-      else {
-        //Logic logika
-        //Zatvaranje stepData
-        newStepData!.logicData=payload;
-        await StepDataRepository.save(newStepData!);
-        //Checking to see if the email is valid
-        const validEmail:boolean = validateEmail(payload);
+    else {
+      //Logic logika
+      //Zatvaranje stepData
+      newStepData!.logicData=payload;
+      await StepDataRepository.save(newStepData!);
+      //Checking to see if the email is valid
+      const validEmail:boolean = validateEmail(payload);
 
-        if(validEmail){
-          //If Logic passes
-          //Zatvaramo stepAttempt
-          newStepAttempt.isSuccessful=true;
-          await StepAttemptRepository.save(newStepAttempt);
+      if(validEmail){
+        //If Logic passes
+        //Zatvaramo stepAttempt
+        newStepAttempt.isSuccessful=true;
+        await StepAttemptRepository.save(newStepAttempt);
 
-          //Zatvaramo step
-          Step.isSuccessful = true;
-          Step.isFinished = true;
-          await StepRepository.save(Step);
+        //Zatvaramo step
+        Step.isSuccessful = true;
+        Step.isFinished = true;
+        await StepRepository.save(Step);
 
-        }
-        else{
+      }
+      else{
           //If Logic fails
           //Zatvaramo StepAttempt
           newStepAttempt.isSuccessful=false;
           await StepAttemptRepository.save(newStepAttempt);
 
-         //Zatvaramo Step
-         Step.isSuccessful=false;
-         //Provera da vidimo da li cemo ga zauvek zatvoriti
-         if(Step.maxAttempts-Step.currentAttempt<=0){
-           Step.isFinished = true;
-           
-         }else Step.isFinished = false;
-         await StepRepository.save(Step);
-         
+          //Zatvaramo Step
+          Step.isSuccessful=false;
+          //Provera da vidimo da li cemo ga zauvek zatvoriti
+          if(Step.maxAttempts-Step.currentAttempt<=0){
+              Step.isFinished = true;
+              //Ako se zatvori step koji nije succesful onda cela sessija nije succesful
+              Session.finishedAt = new Date();
+              Session.isFinished = true;
+              Session.status = SessionStatus.Completed;
+              Session.isSuccessful=false;
+              await SessionRepository.save(Session);
+              await StepRepository.save(Step);
+              return res.send("Korak i cela sesija su neuspesni");
 
-        }
+          }
+           else Step.isFinished = false;
+           await StepRepository.save(Step);
+        
 
       }
+   }
         //Setting up queries for Searching for steps of session
         const filterObject: any = {};
         filterObject.session = Session.id;
@@ -256,40 +246,31 @@ app.post('/finishStep',async(req:Request, res:Response) => {
         const findObject: any = { where: filterObject }
         const stepsConditions = await StepRepository.find(findObject);
         //Check if returned something
-        if(Object.keys(stepsConditions).length)res.send("Jos ima nedovrsenih koraka za ovu sesiju");
+        if(Object.keys(stepsConditions).length)res.send("Uspesno snimljeno, jos ima nedovrsenih koraka za ovu sesiju");
         else {
           //Nema onih koji nisu finished, znaci svi su finished, sesija je prosla i successfull 
-          //Session.finishedAt = new Date();
+          //Jer cemo staviti sessiju na completed i not succesful cim se jedan korak pogresi
+          Session.finishedAt = new Date();
           Session.isFinished = true;
           Session.status = SessionStatus.Completed;
           Session.isSuccessful=true;
+          await SessionRepository.save(Session);
         }
-  //Uzmemo taj trazeni step, proveravamo da li je sessija na created, odmah je bacamo na InProgress
-  //Ako sve prodje
-  //Utvrdimo tip stepa(mozemo prikazati poruku korisnku) i ubacimo payload u odgovarajucu funkciju, Math ili Logic, prosledimo i id step-a 
-  
-  //U funkciji proverimo da li je Step Finished prvo, ubelezimo stepAttempt u bazi sa rezultatom i vrednost koja je to generisala
-  //Ako je uspesan stepAtempt onda stavljamo i sam StepAttempt i Step kao uspesan o ipisujemo rezultate data
+        res.send("Gotovo, sve uspesno");
 
-      //Imamo funkciju koja Proverava da li je ostalo jos koraka u session-u, 
-      //ako nije ostalo jos koraka onda stavljamo session kao uspesan ako su svi stepovi gotovi i uspesni
-
-      //Takodje moramo imati funkciju koja ce se pozivati posle svakog gotovog step-a da azurira stepData
-      //Poziva se i posle uspesnog i neuspesnog gotovog step-a
-
-  //Ako je neuspesan stepAttempt onda belezimo stepAttempt u bazi i damo korisniku opet da pokusa ukoliko moze
-  //Ukoliko ne moze, zatvaramo step, pisemo rezultat poslednje vrednosti iz neuspesnog step-a
-  // i pozivamo funkciju da vidimo da li zatvaramo session(da li je ostalo jos notFinished koraka)
-
-  //Napisati regex za logic
 });
  
-  app.get('/getSessions/',async (req:Request, res:Response) => {
+  app.get('/getSessions',async (req:Request, res:Response) => {
       //res.send("Ovde idu sesije");
       //Return all sessions
      
       //Basic querys
       //All sessions
+
+      const filterObject: any = {};
+      filterObject.isFinished = true;
+      const findObject: any = { where: filterObject }
+      const stepsConditions = await SessionRepository.find(findObject);
       const sessions = await SessionRepository.find();
       res.json(sessions);
 

@@ -6,10 +6,10 @@ export class StepData {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({nullable:true})
     mathData!: string;
 
-    @Column()
+    @Column({nullable:true})
     logicData!: string;
 
 }

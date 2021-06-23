@@ -10,7 +10,7 @@ export class StepAttempt {
     @Column()
     isSuccessful!: boolean;
 
-    @Column()
+    @Column({nullable:true})
     data!: string;
 
     @ManyToOne(() => Step, step => step.stepAttempts)
