@@ -44,6 +44,7 @@ export enum SessionStatus {
     @Column()
     isFinished!: boolean;
 
+    @Column({nullable: true })
     @OneToOne(() => StepData)
     @JoinColumn()
     stepData!: number;

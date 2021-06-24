@@ -94,7 +94,6 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       
       const Session = await SessionRepository.findOne(sessionId);
       const Step = await StepRepository.findOne(stepId);
-      //res.send(Step);
       
       //Provera da li smo dobre id-jeve dali
       if(Session == null || Step == null) return res.status(500).send("Ne postoje entiteti sa traženim id-jevima");
@@ -119,6 +118,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       //Ako postoji stepData
         try{
         newStepData = await StepDataRepository.findOne(Session.stepData);
+        
         // Session.stepData = newStepData!.id;
         }catch(err){
           console.log(err);
