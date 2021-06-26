@@ -98,6 +98,7 @@ app.post('/finishStep',async(req:Request, res:Response) => {
       //Provera da li smo dobre id-jeve dali
       if(Session == null || Step == null) return res.status(500).send("Ne postoje entiteti sa traženim id-jevima");
 
+      if(Step.session!=Session.id) return res.status(500).send("Ne postoje entiteti sa traženim id-jevima");
       if(Session.status=="Completed")return res.send("Već je završena tražena sesija");
       //provera da li smo zavrsili korak
       if(Step.isFinished==true)return res.send("Već je završen korak");
